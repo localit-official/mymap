@@ -1,0 +1,904 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>책방유람 | 고양시 독립서점 지도</title>
+
+  <style>
+    /* 전체 페이지 기본 설정 */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: #30352E;
+      background: #F8F7F2;
+    }
+
+    /* 화면을 왼쪽 검색 영역과 오른쪽 지도로 분할 */
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* 왼쪽 사이드바 */
+    .sidebar {
+      width: 390px;
+      min-width: 350px;
+      display: flex;
+      flex-direction: column;
+      background: #FAF9F5;
+      border-right: 1px solid #E5E3DA;
+      z-index: 1;
+    }
+
+    /* 서비스 제목 */
+    .header {
+      padding: 25px 22px 20px;
+      background: #34483B;
+      color: #FFFDF6;
+    }
+
+    .brand {
+      margin: 0 0 9px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #D5DCCF;
+    }
+
+    .header h1 {
+      margin: 0 0 9px;
+      font-family: Georgia, "Malgun Gothic", serif;
+      font-size: 29px;
+      font-weight: 600;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #E0E5DA;
+    }
+
+    /* 구별 탭 버튼 */
+    .district-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 16px 18px 12px;
+    }
+
+    .district-tab {
+      flex: 1;
+      padding: 11px 3px;
+      border: 1px solid #D9D9CD;
+      border-radius: 7px;
+      background: transparent;
+      color: #596253;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .district-tab:hover {
+      background: #E9EDE4;
+    }
+
+    .district-tab.active {
+      background: #34483B;
+      color: white;
+      border-color: #34483B;
+      font-weight: bold;
+    }
+
+    /* 검색창 */
+    .search-box {
+      display: flex;
+      gap: 7px;
+      padding: 0 18px 12px;
+    }
+
+    #searchInput {
+      flex: 1;
+      min-width: 0;
+      padding: 11px;
+      border: 1px solid #D9D9CD;
+      border-radius: 7px;
+      background: white;
+      font-size: 13px;
+      outline: none;
+    }
+
+    #searchInput:focus {
+      border-color: #687D61;
+    }
+
+    #searchButton {
+      padding: 0 16px;
+      border: none;
+      border-radius: 7px;
+      background: #687D61;
+      color: white;
+      cursor: pointer;
+    }
+
+    #searchButton:hover {
+      background: #4D6348;
+    }
+
+    /* 검색 유형 선택 */
+    .filter-box {
+      padding: 0 18px 14px;
+    }
+
+    .filter-box label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 11px;
+      color: #74796E;
+    }
+
+    #categorySelect {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #D9D9CD;
+      border-radius: 7px;
+      background: white;
+      color: #30352E;
+      font-size: 13px;
+    }
+
+    /* 검색 상태와 결과 개수 */
+    .result-header {
+      padding: 12px 20px;
+      border-top: 1px solid #E5E3DA;
+      border-bottom: 1px solid #E5E3DA;
+      background: #F1F0E8;
+    }
+
+    #status {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #62685D;
+    }
+
+    /* 검색 결과 목록 */
+    #resultList {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .place-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #E9E7DF;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .place-item:hover {
+      background: #F0F1E9;
+    }
+
+    .place-item.selected {
+      background: #E8EDE3;
+      border-left: 3px solid #687D61;
+      padding-left: 17px;
+    }
+
+    .place-item h3 {
+      margin: 0 0 7px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .place-item p {
+      margin: 4px 0;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #73776D;
+    }
+
+    .place-category {
+      color: #687D61 !important;
+    }
+
+    .place-item a {
+      display: inline-block;
+      margin-top: 7px;
+      color: #52694C;
+      font-size: 11px;
+      text-decoration: none;
+    }
+
+    .place-item a:hover {
+      text-decoration: underline;
+    }
+
+    /* 검색 결과가 없을 때 */
+    .empty-message {
+      padding: 30px 20px;
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #85877D;
+    }
+
+    /* 페이지 이동 버튼 */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 12px;
+      border-top: 1px solid #E5E3DA;
+      background: #FAF9F5;
+    }
+
+    .page-button {
+      padding: 8px 13px;
+      border: 1px solid #D9D9CD;
+      border-radius: 6px;
+      background: white;
+      color: #34483B;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .page-button:disabled {
+      color: #B7B8B0;
+      cursor: not-allowed;
+      background: #F1F0E8;
+    }
+
+    #pageInfo {
+      min-width: 45px;
+      text-align: center;
+      font-size: 12px;
+      color: #62685D;
+    }
+
+    /* 오른쪽 지도 */
+    #map {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      background: #E9E8E0;
+    }
+
+    /* 작은 화면 대응 */
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        height: 55%;
+      }
+
+      #map {
+        width: 100%;
+        height: 45%;
+      }
+
+      .header {
+        padding: 15px 18px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- 왼쪽: 책방유람 검색 영역 -->
+    <aside class="sidebar">
+
+      <header class="header">
+        <p class="brand">BOOKSTORE JOURNEY</p>
+        <h1>책방유람</h1>
+        <p>고양시 곳곳에 숨겨진 독립서점을 찾아보세요.</p>
+      </header>
+
+      <!-- 고양시 구별 검색 탭 -->
+      <nav class="district-tabs" aria-label="지역 선택">
+        <button
+          type="button"
+          class="district-tab active"
+          data-district="일산동구"
+          aria-pressed="true"
+        >
+          일산동구
+        </button>
+
+        <button
+          type="button"
+          class="district-tab"
+          data-district="일산서구"
+          aria-pressed="false"
+        >
+          일산서구
+        </button>
+
+        <button
+          type="button"
+          class="district-tab"
+          data-district="덕양구"
+          aria-pressed="false"
+        >
+          덕양구
+        </button>
+      </nav>
+
+      <!-- 검색창 -->
+      <form class="search-box" id="searchForm">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="독립서점 이름 또는 검색어"
+          aria-label="검색어 입력"
+        >
+        <button type="submit" id="searchButton">검색</button>
+      </form>
+
+      <!-- 키워드 검색과 카테고리 검색 선택 -->
+      <div class="filter-box">
+        <label for="categorySelect">검색 유형</label>
+
+        <select id="categorySelect">
+          <option value="keyword">키워드 검색 · 독립서점</option>
+          <option value="CE7">카테고리 검색 · 카페</option>
+          <option value="CT1">카테고리 검색 · 문화시설</option>
+          <option value="AT4">카테고리 검색 · 관광명소</option>
+          <option value="FD6">카테고리 검색 · 음식점</option>
+        </select>
+      </div>
+
+      <!-- 검색 상태 -->
+      <div class="result-header">
+        <p id="status" role="status">
+          지도를 불러오는 중입니다.
+        </p>
+      </div>
+
+      <!-- 검색 결과 목록 -->
+      <div id="resultList" aria-live="polite">
+        <div class="empty-message">
+          잠시만 기다려 주세요.
+        </div>
+      </div>
+
+      <!-- 검색 결과 페이지 이동 -->
+      <div class="pagination">
+        <button
+          type="button"
+          id="prevButton"
+          class="page-button"
+          disabled
+        >
+          이전
+        </button>
+
+        <span id="pageInfo">1 페이지</span>
+
+        <button
+          type="button"
+          id="nextButton"
+          class="page-button"
+          disabled
+        >
+          다음
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- 오른쪽: 카카오맵 -->
+    <main id="map" aria-label="고양시 장소 검색 지도"></main>
+
+  </div>
+
+  <!-- 카카오맵 SDK와 장소 검색 서비스 불러오기 -->
+  <script
+    src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=4238d033baac11e136f8c02ca60769dd&autoload=false&libraries=services"
+  ></script>
+
+  <script>
+    // HTML 요소 가져오기
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+    const categorySelect = document.getElementById("categorySelect");
+    const resultList = document.getElementById("resultList");
+    const statusText = document.getElementById("status");
+    const pageInfo = document.getElementById("pageInfo");
+    const prevButton = document.getElementById("prevButton");
+    const nextButton = document.getElementById("nextButton");
+    const districtTabs = document.querySelectorAll(".district-tab");
+
+    // 지도와 검색에 사용할 변수
+    let map;
+    let placesService;
+    let currentMarker;
+    let placeMarkers = [];
+    let infoWindow;
+    let currentPagination = null;
+    let currentPosition = null;
+    let selectedDistrict = "일산동구";
+    let searchRequestId = 0;
+
+    // 고양시 중심 좌표를 기본 위치로 사용
+    const defaultPosition = new kakao.maps.LatLng(
+      37.6584,
+      126.8320
+    );
+
+    // 검색 반경과 한 페이지에 표시할 결과 개수
+    const searchRadius = 20000;
+    const pageSize = 10;
+
+    // 상태 메시지 표시
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    // 페이지 이동 버튼 초기화
+    function resetPagination() {
+      currentPagination = null;
+      pageInfo.textContent = "1 페이지";
+      prevButton.disabled = true;
+      nextButton.disabled = true;
+    }
+
+    // 현재 검색 결과의 마커를 모두 제거
+    function clearPlaceMarkers() {
+      placeMarkers.forEach(function (marker) {
+        marker.setMap(null);
+      });
+
+      placeMarkers = [];
+
+      // 이전 장소의 팝업 닫기
+      if (infoWindow) {
+        infoWindow.close();
+      }
+    }
+
+    // 검색 목록 비우기
+    function clearResults() {
+      resultList.replaceChildren();
+      clearPlaceMarkers();
+      resetPagination();
+    }
+
+    // 선택된 구에 따라 탭의 디자인 변경
+    function updateDistrictTabs() {
+      districtTabs.forEach(function (tab) {
+        const isActive = tab.dataset.district === selectedDistrict;
+
+        tab.classList.toggle("active", isActive);
+        tab.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    // 지도 생성 및 검색 기능 준비
+    function initializeMap() {
+      try {
+        // 고양시를 중심으로 지도 생성
+        map = new kakao.maps.Map(
+          document.getElementById("map"),
+          {
+            center: defaultPosition,
+            level: 5
+          }
+        );
+
+        // 장소 검색 서비스 생성
+        placesService = new kakao.maps.services.Places();
+
+        // 마커를 눌렀을 때 사용할 팝업 생성
+        infoWindow = new kakao.maps.InfoWindow({
+          zIndex: 3
+        });
+
+        // 현재 위치 마커 생성
+        currentMarker = new kakao.maps.Marker({
+          position: defaultPosition,
+          map: map
+        });
+
+        // 현재 위치 확인
+        getCurrentLocation();
+
+      } catch (error) {
+        console.error("지도 초기화 오류:", error);
+        setStatus("지도를 불러오지 못했습니다. API 설정을 확인해 주세요.");
+      }
+    }
+
+    // 현재 위치 가져오기
+    function getCurrentLocation() {
+      if (!navigator.geolocation) {
+        setStatus("위치 기능을 지원하지 않아 고양시를 중심으로 표시합니다.");
+        searchPlaces();
+        return;
+      }
+
+      setStatus("현재 위치를 확인하고 있습니다.");
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          // 현재 위치의 좌표 저장
+          currentPosition = new kakao.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+
+          // 지도와 현재 위치 마커 이동
+          map.setCenter(currentPosition);
+          currentMarker.setPosition(currentPosition);
+
+          setStatus("위치를 확인했습니다. 장소를 검색합니다.");
+
+          // 위치 확인이 끝나면 첫 검색 실행
+          searchPlaces();
+        },
+
+        function (error) {
+          // 위치 확인에 실패하면 고양시 기본 좌표 사용
+          console.warn("현재 위치 확인 실패:", error);
+
+          currentPosition = defaultPosition;
+          map.setCenter(defaultPosition);
+          currentMarker.setPosition(defaultPosition);
+
+          setStatus("현재 위치를 확인할 수 없어 고양시를 중심으로 검색합니다.");
+
+          searchPlaces();
+        },
+
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    // 검색 결과에 사용할 장소 마커와 팝업 생성
+    function displayMarker(place) {
+      const placePosition = new kakao.maps.LatLng(
+        Number(place.y),
+        Number(place.x)
+      );
+
+      const marker = new kakao.maps.Marker({
+        map: map,
+        position: placePosition
+      });
+
+      placeMarkers.push(marker);
+
+      // 팝업 내용을 안전하게 생성
+      const popupContent = document.createElement("div");
+      popupContent.style.cssText =
+        "padding:10px;max-width:240px;line-height:1.6;";
+
+      const placeName = document.createElement("strong");
+      placeName.textContent = place.place_name;
+      placeName.style.display = "block";
+      placeName.style.fontSize = "13px";
+
+      const placeAddress = document.createElement("p");
+      placeAddress.textContent =
+        place.road_address_name ||
+        place.address_name ||
+        "주소 정보가 없습니다.";
+
+      placeAddress.style.cssText =
+        "margin:4px 0 0;font-size:11px;color:#666;";
+
+      popupContent.append(placeName, placeAddress);
+
+      // 마커를 누르면 장소 이름과 주소 표시
+      kakao.maps.event.addListener(marker, "click", function () {
+        infoWindow.setContent(popupContent);
+        infoWindow.open(map, marker);
+        map.panTo(placePosition);
+        highlightPlace(place.id);
+      });
+
+      return marker;
+    }
+
+    // 목록에서 선택한 장소 강조
+    function highlightPlace(placeId) {
+      const items = resultList.querySelectorAll(".place-item");
+
+      items.forEach(function (item) {
+        item.classList.toggle(
+          "selected",
+          item.dataset.placeId === String(placeId)
+        );
+      });
+    }
+
+    // 검색 결과를 왼쪽 목록에 표시
+    function displayResults(places) {
+      resultList.replaceChildren();
+      clearPlaceMarkers();
+
+      if (!places || places.length === 0) {
+        const emptyMessage = document.createElement("div");
+        emptyMessage.className = "empty-message";
+        emptyMessage.textContent =
+          "검색 결과가 없습니다. 다른 검색어를 입력해 보세요.";
+
+        resultList.appendChild(emptyMessage);
+        setStatus(selectedDistrict + " 검색 결과가 없습니다.");
+        return;
+      }
+
+      // 검색된 장소마다 목록과 마커 생성
+      places.forEach(function (place) {
+        const item = document.createElement("article");
+        item.className = "place-item";
+        item.dataset.placeId = String(place.id);
+
+        const title = document.createElement("h3");
+        title.textContent = place.place_name;
+
+        const category = document.createElement("p");
+        category.className = "place-category";
+        category.textContent =
+          place.category_name || "분류 정보 없음";
+
+        const address = document.createElement("p");
+        address.textContent =
+          place.road_address_name ||
+          place.address_name ||
+          "주소 정보 없음";
+
+        item.append(title, category, address);
+
+        // 카카오맵 상세 페이지 연결
+        if (place.place_url) {
+          const link = document.createElement("a");
+          link.textContent = "카카오맵에서 보기";
+          link.href = place.place_url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+
+          item.appendChild(link);
+        }
+
+        resultList.appendChild(item);
+
+        const marker = displayMarker(place);
+
+        // 목록을 누르면 지도 중심 이동 및 팝업 표시
+        item.addEventListener("click", function (event) {
+          if (event.target.closest("a")) {
+            return;
+          }
+
+          const markerPosition = marker.getPosition();
+
+          map.panTo(markerPosition);
+          infoWindow.setContent(createPopupContent(place));
+          infoWindow.open(map, marker);
+
+          highlightPlace(place.id);
+        });
+      });
+
+      setStatus(
+        selectedDistrict + " · 현재 페이지 " +
+        places.length + "개 장소"
+      );
+    }
+
+    // 장소 팝업 내용 생성
+    function createPopupContent(place) {
+      const popupContent = document.createElement("div");
+      popupContent.style.cssText =
+        "padding:10px;max-width:240px;line-height:1.6;";
+
+      const title = document.createElement("strong");
+      title.textContent = place.place_name;
+      title.style.display = "block";
+      title.style.fontSize = "13px";
+
+      const address = document.createElement("p");
+      address.textContent =
+        place.road_address_name ||
+        place.address_name ||
+        "주소 정보가 없습니다.";
+
+      address.style.cssText =
+        "margin:4px 0 0;font-size:11px;color:#666;";
+
+      popupContent.append(title, address);
+
+      return popupContent;
+    }
+
+    // 페이지 이동 버튼 상태 업데이트
+    function updatePagination(pagination) {
+      currentPagination = pagination;
+
+      pageInfo.textContent =
+        pagination.current + " 페이지";
+
+      prevButton.disabled = !pagination.hasPrevPage;
+      nextButton.disabled = !pagination.hasNextPage;
+    }
+
+    // 검색 요청 실행
+    function searchPlaces() {
+      if (!map || !placesService || !currentPosition) {
+        setStatus("지도가 준비될 때까지 기다려 주세요.");
+        return;
+      }
+
+      // 이전 요청의 응답이 나중에 도착해 결과를 덮어쓰는 문제 방지
+      const requestId = ++searchRequestId;
+
+      clearResults();
+
+      const searchType = categorySelect.value;
+      const keyword = searchInput.value.trim();
+      const location = currentPosition;
+
+      setStatus(selectedDistrict + " 장소를 검색하고 있습니다.");
+
+      // 현재 위치를 기준으로 검색하되, 구별 탭은 키워드 검색에 반영
+      const options = {
+        location: location,
+        radius: searchRadius,
+        size: pageSize,
+        page: 1,
+        sort: kakao.maps.services.SortBy.DISTANCE
+      };
+
+      // 카테고리 검색
+      if (searchType !== "keyword") {
+        placesService.categorySearch(
+          searchType,
+          function (data, status, pagination) {
+            if (requestId !== searchRequestId) {
+              return;
+            }
+
+            handleSearchResult(data, status, pagination);
+          },
+          options
+        );
+
+        return;
+      }
+
+      // 키워드 검색: 입력한 단어가 있으면 구 이름과 함께 검색
+      const searchKeyword = keyword
+        ? selectedDistrict + " " + keyword
+        : selectedDistrict + " 독립서점";
+
+      placesService.keywordSearch(
+        searchKeyword,
+        function (data, status, pagination) {
+          if (requestId !== searchRequestId) {
+            return;
+          }
+
+          handleSearchResult(data, status, pagination);
+        },
+        options
+      );
+    }
+
+    // 검색 응답 처리
+    function handleSearchResult(data, status, pagination) {
+      if (status === kakao.maps.services.Status.OK) {
+        displayResults(data);
+        updatePagination(pagination);
+
+      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+        clearResults();
+
+        const emptyMessage = document.createElement("div");
+        emptyMessage.className = "empty-message";
+        emptyMessage.textContent =
+          "검색 결과가 없습니다. 다른 검색어를 입력해 보세요.";
+
+        resultList.appendChild(emptyMessage);
+        setStatus("검색 결과가 없습니다.");
+
+      } else {
+        clearResults();
+        setStatus("검색 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        console.error("장소 검색 오류:", status);
+      }
+    }
+
+    // 구별 탭을 누르면 선택 지역 변경 후 다시 검색
+    districtTabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        selectedDistrict = tab.dataset.district;
+
+        updateDistrictTabs();
+
+        // 구별 탭을 변경할 때 이전 검색 결과 제거
+        clearResults();
+
+        // 해당 구의 대표 위치로 지도 이동
+        const districtPositions = {
+          "일산동구": new kakao.maps.LatLng(37.6584, 126.8320),
+          "일산서구": new kakao.maps.LatLng(37.6770, 126.7500),
+          "덕양구": new kakao.maps.LatLng(37.6370, 126.8320)
+        };
+
+        const districtPosition = districtPositions[selectedDistrict];
+
+        map.setCenter(districtPosition);
+
+        // 키워드 검색은 선택한 구를 기준으로 검색할 수 있도록
+        // 현재 검색 기준 좌표도 해당 구의 대표 위치로 변경
+        currentPosition = districtPosition;
+
+        if (currentMarker) {
+          currentMarker.setPosition(districtPosition);
+        }
+
+        searchPlaces();
+      });
+    });
+
+    // 검색 버튼 또는 Enter 키로 검색
+    searchForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      searchPlaces();
+    });
+
+    // 검색 유형 변경 시 새 결과 표시
+    categorySelect.addEventListener("change", function () {
+      searchPlaces();
+    });
+
+    // 이전 페이지로 이동
+    prevButton.addEventListener("click", function () {
+      if (currentPagination && currentPagination.hasPrevPage) {
+        currentPagination.prevPage();
+      }
+    });
+
+    // 다음 페이지로 이동
+    nextButton.addEventListener("click", function () {
+      if (currentPagination && currentPagination.hasNextPage) {
+        currentPagination.nextPage();
+      }
+    });
+
+    // SDK 로딩이 끝난 후 지도 생성
+    window.addEventListener("load", function () {
+      if (typeof kakao === "undefined" || !kakao.maps) {
+        setStatus("카카오맵 SDK를 불러오지 못했습니다. API 키와 도메인을 확인해 주세요.");
+        return;
+      }
+
+      kakao.maps.load(function () {
+        initializeMap();
+      });
+    });
+  </script>
+</body>
+</html>
