@@ -1,1 +1,676 @@
-4238d033baac11e136f8c02ca60769dd
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>일산 서점 탐색</title>
+
+  <style>
+    /* 전체 페이지의 기본 설정 */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      color: #222;
+    }
+
+    /* 화면을 왼쪽과 오른쪽으로 분할 */
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* 왼쪽 검색 영역 */
+    .sidebar {
+      width: 360px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #ddd;
+      background-color: #fff;
+      z-index: 1;
+    }
+
+    .header {
+      padding: 24px 20px 16px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .header p {
+      margin: 0;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* 일산동구와 일산서구 탭 */
+    .tab-container {
+      display: flex;
+      gap: 8px;
+      padding: 0 20px 16px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      color: #555;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .tab-button:hover {
+      background-color: #f5f8ff;
+    }
+
+    .tab-button.active {
+      background-color: #3978f6;
+      border-color: #3978f6;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* 검색창과 검색 버튼 */
+    .search-box {
+      display: flex;
+      gap: 8px;
+      padding: 0 20px 16px;
+    }
+
+    #searchInput {
+      flex: 1;
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    #searchInput:focus {
+      border-color: #3978f6;
+    }
+
+    #searchButton {
+      padding: 0 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #3978f6;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #searchButton:hover {
+      background-color: #245fd0;
+    }
+
+    /* 검색 상태 안내 */
+    #status {
+      padding: 0 20px 12px;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    /* 검색 결과 목록 */
+    #resultList {
+      flex: 1;
+      overflow-y: auto;
+      border-top: 1px solid #eee;
+    }
+
+    .place-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+
+    .place-item:hover,
+    .place-item.selected {
+      background-color: #f0f5ff;
+    }
+
+    .place-item h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .place-item p {
+      margin: 4px 0;
+      color: #666;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .place-item a {
+      display: inline-block;
+      margin-top: 8px;
+      color: #3978f6;
+      font-size: 12px;
+      text-decoration: none;
+    }
+
+    /* 지도 영역 */
+    #map {
+      flex: 1;
+      height: 100%;
+      min-width: 0;
+      background-color: #eee;
+    }
+
+    /* 지도 팝업의 디자인 */
+    .popup {
+      min-width: 200px;
+      max-width: 260px;
+      padding: 12px;
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .popup h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .popup p {
+      margin: 4px 0;
+      color: #555;
+      overflow-wrap: anywhere;
+    }
+
+    .popup a {
+      display: inline-block;
+      margin-top: 6px;
+      color: #3978f6;
+      text-decoration: none;
+    }
+
+    /* 화면이 좁은 휴대전화에서는 세로로 배치 */
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        height: 48%;
+      }
+
+      #map {
+        width: 100%;
+        height: 52%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- 왼쪽: 탭, 검색창, 결과 목록 -->
+    <aside class="sidebar">
+
+      <div class="header">
+        <h1>일산 서점 탐색</h1>
+        <p>지역을 선택하고 주변 서점을 찾아보세요.</p>
+      </div>
+
+      <!-- 지역 선택 탭 -->
+      <div class="tab-container">
+        <button
+          type="button"
+          class="tab-button active"
+          data-district="일산동구"
+          aria-pressed="true"
+        >
+          일산동구
+        </button>
+
+        <button
+          type="button"
+          class="tab-button"
+          data-district="일산서구"
+          aria-pressed="false"
+        >
+          일산서구
+        </button>
+      </div>
+
+      <!-- 검색창 -->
+      <form class="search-box" id="searchForm">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="서점 이름 또는 검색어"
+          aria-label="검색할 서점"
+        >
+        <button type="submit" id="searchButton">검색</button>
+      </form>
+
+      <!-- 검색 상태 안내 -->
+      <div id="status" role="status" aria-live="polite">
+        지도를 불러오는 중입니다...
+      </div>
+
+      <!-- 검색 결과 목록 -->
+      <div id="resultList"></div>
+
+    </aside>
+
+    <!-- 오른쪽: 카카오맵 -->
+    <main id="map" aria-label="서점 검색 지도"></main>
+
+  </div>
+
+  <!-- 카카오맵 JavaScript SDK -->
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=4238d033baac11e136f8c02ca60769dd&autoload=false&libraries=services"></script>
+
+  <script>
+    // HTML 요소 가져오기
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
+    const resultList = document.getElementById("resultList");
+    const statusText = document.getElementById("status");
+    const tabButtons = document.querySelectorAll(".tab-button");
+
+    // 지도와 검색 기능에 사용할 변수
+    let map;
+    let placesService;
+    let currentMarker;
+    let currentPosition = null;
+    let placeMarkers = [];
+    let infoWindow = null;
+    let activeDistrict = "일산동구";
+    let searchSequence = 0;
+
+    // 현재 위치를 확인하지 못했을 때 사용할 기본 좌표
+    const defaultPosition = {
+      lat: 37.5665,
+      lng: 126.9780
+    };
+
+    // 상태 메시지 변경
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    // 지도 초기화
+    function initializeMap() {
+      try {
+        const initialPosition = new kakao.maps.LatLng(
+          defaultPosition.lat,
+          defaultPosition.lng
+        );
+
+        map = new kakao.maps.Map(
+          document.getElementById("map"),
+          {
+            center: initialPosition,
+            level: 5
+          }
+        );
+
+        // 장소 검색 서비스 준비
+        placesService = new kakao.maps.services.Places();
+
+        // 현재 위치 마커 생성
+        currentMarker = new kakao.maps.Marker({
+          position: initialPosition,
+          map: map
+        });
+
+        // 현재 위치 확인 후 선택된 지역의 서점 검색
+        getCurrentLocation();
+
+      } catch (error) {
+        console.error("지도 초기화 오류:", error);
+        setStatus("지도를 불러오지 못했습니다. API 키와 설정을 확인해 주세요.");
+      }
+    }
+
+    // 현재 위치 가져오기
+    function getCurrentLocation() {
+      if (!navigator.geolocation) {
+        setStatus("위치 기능을 지원하지 않습니다. 지역 검색을 진행합니다.");
+        searchBooksStores();
+        return;
+      }
+
+      setStatus("현재 위치를 확인하고 있습니다...");
+
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          // 현재 위도와 경도 저장
+          currentPosition = new kakao.maps.LatLng(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+
+          // 지도 중심과 현재 위치 마커 이동
+          map.setCenter(currentPosition);
+          currentMarker.setPosition(currentPosition);
+
+          setStatus("현재 위치를 확인했습니다. 서점을 검색합니다.");
+
+          // 현재 위치를 확인한 뒤 선택된 지역 검색
+          searchBooksStores();
+        },
+
+        function (error) {
+          // 위치 확인에 실패하면 기본 위치를 유지
+          console.warn("현재 위치 확인 실패:", error);
+
+          currentPosition = null;
+
+          if (error.code === 1) {
+            setStatus("위치 권한이 거부되었습니다. 지역 검색을 진행합니다.");
+          } else {
+            setStatus("현재 위치를 확인하지 못했습니다. 지역 검색을 진행합니다.");
+          }
+
+          searchBooksStores();
+        },
+
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    // 이전 검색 결과와 팝업 제거
+    function clearResults() {
+      placeMarkers.forEach(function (marker) {
+        marker.setMap(null);
+      });
+
+      placeMarkers = [];
+
+      if (infoWindow) {
+        infoWindow.close();
+      }
+
+      resultList.replaceChildren();
+    }
+
+    // 장소가 서점인지 확인
+    function isBookstore(place) {
+      const categoryName = place.category_name || "";
+      const placeName = place.place_name || "";
+
+      return categoryName.includes("서점") ||
+        /서점|북스토어|북샵|북스$/i.test(placeName);
+    }
+
+    // 현재 위치와 장소 사이의 거리 계산
+    function getDistance(place) {
+      if (!currentPosition) {
+        return Number.POSITIVE_INFINITY;
+      }
+
+      const placePosition = new kakao.maps.LatLng(
+        Number(place.y),
+        Number(place.x)
+      );
+
+      return currentPosition.getDistance(placePosition);
+    }
+
+    // 카카오맵 상세정보 팝업 만들기
+    function createPopup(place) {
+      const popup = document.createElement("div");
+      popup.className = "popup";
+
+      const title = document.createElement("h3");
+      title.textContent = place.place_name;
+
+      const address = document.createElement("p");
+      address.textContent =
+        "주소: " +
+        (place.road_address_name || place.address_name || "주소 정보 없음");
+
+      const category = document.createElement("p");
+      category.textContent =
+        "분류: " + (place.category_name || "분류 정보 없음");
+
+      popup.append(title, address, category);
+
+      // 카카오맵 상세 페이지 링크 추가
+      if (place.place_url) {
+        const link = document.createElement("a");
+        link.textContent = "카카오맵에서 상세정보 보기";
+        link.href = place.place_url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        popup.appendChild(link);
+      }
+
+      return popup;
+    }
+
+    // 검색 결과를 목록과 지도에 표시
+    function displayResults(places) {
+      clearResults();
+
+      // 검색 결과 중 서점만 선택
+      const bookstores = places.filter(isBookstore);
+
+      // 현재 위치가 있으면 가까운 서점부터 정렬
+      bookstores.sort(function (a, b) {
+        return getDistance(a) - getDistance(b);
+      });
+
+      if (bookstores.length === 0) {
+        setStatus(
+          "검색된 서점이 없습니다. 다른 검색어를 입력해 보세요."
+        );
+        return;
+      }
+
+      setStatus("서점 검색 결과 " + bookstores.length + "개");
+
+      const bounds = new kakao.maps.LatLngBounds();
+
+      // 각 서점의 목록과 마커 생성
+      bookstores.forEach(function (place) {
+        const item = document.createElement("article");
+        item.className = "place-item";
+
+        const title = document.createElement("h3");
+        title.textContent = place.place_name;
+
+        const address = document.createElement("p");
+        address.textContent =
+          place.road_address_name ||
+          place.address_name ||
+          "주소 정보 없음";
+
+        item.append(title, address);
+
+        // 목록에 카카오맵 상세 페이지 링크 추가
+        if (place.place_url) {
+          const link = document.createElement("a");
+          link.textContent = "카카오맵에서 보기";
+          link.href = place.place_url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+
+          item.appendChild(link);
+        }
+
+        resultList.appendChild(item);
+
+        // 검색 결과 좌표로 마커 생성
+        const placePosition = new kakao.maps.LatLng(
+          Number(place.y),
+          Number(place.x)
+        );
+
+        const marker = new kakao.maps.Marker({
+          position: placePosition,
+          map: map
+        });
+
+        placeMarkers.push(marker);
+        bounds.extend(placePosition);
+
+        // 마커를 클릭하면 장소 상세정보 팝업 표시
+        kakao.maps.event.addListener(marker, "click", function () {
+          if (infoWindow) {
+            infoWindow.close();
+          }
+
+          infoWindow = new kakao.maps.InfoWindow({
+            content: createPopup(place),
+            removable: true
+          });
+
+          infoWindow.open(map, marker);
+
+          // 해당 서점이 목록에서도 선택되도록 표시
+          document.querySelectorAll(".place-item").forEach(function (element) {
+            element.classList.remove("selected");
+          });
+
+          item.classList.add("selected");
+        });
+
+        // 목록을 클릭하면 해당 마커의 팝업 표시
+        item.addEventListener("click", function (event) {
+          if (event.target.closest("a")) {
+            return;
+          }
+
+          map.panTo(placePosition);
+
+          if (infoWindow) {
+            infoWindow.close();
+          }
+
+          infoWindow = new kakao.maps.InfoWindow({
+            content: createPopup(place),
+            removable: true
+          });
+
+          infoWindow.open(map, marker);
+
+          document.querySelectorAll(".place-item").forEach(function (element) {
+            element.classList.remove("selected");
+          });
+
+          item.classList.add("selected");
+        });
+      });
+
+      // 검색 결과가 모두 보이도록 지도 범위 조정
+      if (placeMarkers.length > 0) {
+        map.setBounds(bounds);
+      }
+    }
+
+    // 선택된 지역의 서점 검색
+    function searchBooksStores() {
+      if (!map || !placesService) {
+        setStatus("지도가 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+        return;
+      }
+
+      // 새 검색이 시작되면 이전 검색 결과를 무효화
+      const currentSequence = ++searchSequence;
+
+      clearResults();
+
+      // 입력한 검색어가 있으면 지역명 대신 입력한 검색어 사용
+      const inputKeyword = searchInput.value.trim();
+      const keyword = inputKeyword
+        ? activeDistrict + " " + inputKeyword
+        : activeDistrict + " 서점";
+
+      setStatus("'" + keyword + "' 검색 중...");
+      searchButton.disabled = true;
+
+      // 선택한 지역을 검색어에 포함하여 장소 검색
+      placesService.keywordSearch(
+        keyword,
+        function (data, result, pagination) {
+          // 더 최근에 시작한 검색이 있다면 이전 결과는 표시하지 않음
+          if (currentSequence !== searchSequence) {
+            return;
+          }
+
+          searchButton.disabled = false;
+
+          if (result === kakao.maps.services.Status.OK) {
+            displayResults(data);
+          } else if (result === kakao.maps.services.Status.ZERO_RESULT) {
+            clearResults();
+            setStatus("검색 결과가 없습니다. 다른 검색어를 입력해 보세요.");
+          } else {
+            setStatus("검색 중 오류가 발생했습니다. 다시 시도해 주세요.");
+            console.error("장소 검색 오류:", result);
+          }
+        }
+      );
+    }
+
+    // 지역 탭을 누르면 해당 지역의 서점 검색
+    tabButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        activeDistrict = button.dataset.district;
+
+        // 현재 선택된 탭의 디자인과 접근성 상태 변경
+        tabButtons.forEach(function (tab) {
+          const isActive = tab === button;
+
+          tab.classList.toggle("active", isActive);
+          tab.setAttribute("aria-pressed", String(isActive));
+        });
+
+        // 이전 검색어를 지우고 새 지역 검색
+        searchInput.value = "";
+        searchBooksStores();
+      });
+    });
+
+    // 검색 버튼 또는 Enter 키로 검색
+    searchForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      searchBooksStores();
+    });
+
+    // 카카오맵 SDK가 로드되면 지도 초기화
+    window.addEventListener("load", function () {
+      if (
+        typeof kakao === "undefined" ||
+        !kakao.maps
+      ) {
+        setStatus(
+          "카카오맵 SDK를 불러오지 못했습니다. API 키와 도메인 설정을 확인해 주세요."
+        );
+        return;
+      }
+
+      kakao.maps.load(function () {
+        initializeMap();
+      });
+    });
+  </script>
+</body>
+</html>
